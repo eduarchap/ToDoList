@@ -36,9 +36,10 @@ export class SupabaseBoardRepository implements BoardRepository {
   }
 
   async createBoard(name: string): Promise<Board> {
+    // owner_id lo pone la base de datos (default auth.uid()), no el cliente.
     const { data, error } = await this.client
       .from('boards')
-      .insert({ owner_id: this.userId, name: name.trim() || 'Pizarra' })
+      .insert({ name: name.trim() || 'Pizarra' })
       .select()
       .single()
     if (error) throw error

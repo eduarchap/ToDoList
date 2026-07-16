@@ -46,7 +46,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const repo = useMemo<NoteRepository | null>(() => {
     if (status === 'local') return new LocalRepository()
     if (status === 'authenticated' && user && supabase) {
-      return new SupabaseRepository(supabase, user.id)
+      return new SupabaseRepository(supabase)
     }
     return null
   }, [status, user])

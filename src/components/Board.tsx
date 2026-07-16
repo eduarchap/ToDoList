@@ -217,11 +217,6 @@ export function Board() {
       {(boardsError || error) && (
         <div className="border-b border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
           {boardsError || error}
-          {boardsError && (
-            <span className="ml-1 text-red-400/80">
-              — ¿ejecutaste el SQL de tableros en Supabase?
-            </span>
-          )}
         </div>
       )}
 
