@@ -36,9 +36,11 @@ export class SupabaseBoardRepository implements BoardRepository {
   }
 
   async createBoard(name: string): Promise<Board> {
+    // owner_id lo pone la BD con default auth.uid() (ver owner-defaults.sql),
+    // así coincide siempre con auth.uid() y RLS no puede rechazarlo.
     const { data, error } = await this.client
       .from('boards')
-      .insert({ owner_id: this.userId, name: name.trim() || 'Pizarra' })
+      .insert({ name: name.trim() || 'Pizarra' })
       .select()
       .single()
     if (error) throw error

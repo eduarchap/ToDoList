@@ -64,10 +64,7 @@ function patchToRow(patch: Partial<Note>): Record<string, unknown> {
 
 /** Persistencia en la nube con Supabase (sincroniza entre dispositivos). */
 export class SupabaseRepository implements NoteRepository {
-  constructor(
-    private readonly client: SupabaseClient,
-    private readonly userId: string,
-  ) {}
+  constructor(private readonly client: SupabaseClient) {}
 
   async list(boardId: string): Promise<Note[]> {
     // El acceso lo garantiza RLS; filtramos por el tablero pedido.
@@ -84,7 +81,7 @@ export class SupabaseRepository implements NoteRepository {
     const { data, error } = await this.client
       .from('notes')
       .insert({
-        user_id: this.userId,
+        // user_id lo pone la BD con default auth.uid() (ver owner-defaults.sql).
         board_id: input.boardId,
         title: input.title ?? '',
         text: input.text ?? '',
