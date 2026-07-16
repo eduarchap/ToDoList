@@ -3,7 +3,7 @@ import { useBoards } from '../context/BoardsContext'
 import { BoardIcon, CheckIcon, ChevronDownIcon, PencilIcon, PlusIcon, TrashIcon } from './icons'
 
 export function BoardSwitcher() {
-  const { boards, currentBoard, currentBoardId, selectBoard, createBoard, renameBoard, deleteBoard } =
+  const { boards, currentBoard, currentBoardId, error, selectBoard, createBoard, renameBoard, deleteBoard } =
     useBoards()
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -35,8 +35,8 @@ export function BoardSwitcher() {
   async function submitCreate() {
     const n = name.trim()
     if (!n) return
-    await createBoard(n)
-    close()
+    const board = await createBoard(n)
+    if (board) close() // solo cierra si se creó; si falló, el error queda visible
   }
   async function submitRename() {
     const n = name.trim()
@@ -81,6 +81,12 @@ export function BoardSwitcher() {
               </button>
             ))}
           </div>
+
+          {error && (
+            <p className="mx-1 my-1 rounded-lg bg-red-500/10 px-2 py-1.5 text-xs text-red-300">
+              {error}
+            </p>
+          )}
 
           <div className="my-1 border-t border-slate-800" />
 

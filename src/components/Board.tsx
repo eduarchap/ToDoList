@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNotes } from '../context/NotesContext'
+import { useBoards } from '../context/BoardsContext'
 import { BOARD_H, BOARD_W, MAX_SCALE, MIN_SCALE, NOTE_W, clamp } from '../lib/board'
 import { StickyNote } from './StickyNote'
 import { TopBar } from './TopBar'
@@ -8,6 +9,7 @@ import { PlusIcon, TrashIcon } from './icons'
 
 export function Board() {
   const { notes, loading, error, maxZ, addNote, patchNote, trashNote } = useNotes()
+  const { error: boardsError } = useBoards()
 
   const viewportRef = useRef<HTMLDivElement>(null)
   const trashZoneRef = useRef<HTMLDivElement>(null)
@@ -212,9 +214,14 @@ export function Board() {
     <div className="flex h-full flex-col">
       <TopBar trashCount={trashCount} onOpenTrash={() => setTrashOpen(true)} />
 
-      {error && (
+      {(boardsError || error) && (
         <div className="border-b border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
-          {error}
+          {boardsError || error}
+          {boardsError && (
+            <span className="ml-1 text-red-400/80">
+              — ¿ejecutaste el SQL de tableros en Supabase?
+            </span>
+          )}
         </div>
       )}
 

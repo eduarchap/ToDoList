@@ -22,7 +22,7 @@ interface BoardsContextValue {
   loading: boolean
   error: string | null
   selectBoard(id: string): void
-  createBoard(name: string): Promise<void>
+  createBoard(name: string): Promise<Board | null>
   renameBoard(id: string, name: string): Promise<void>
   deleteBoard(id: string): Promise<void>
 }
@@ -92,14 +92,17 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
   }, [repo, status])
 
   const createBoard = useCallback(
-    async (name: string) => {
-      if (!repoRef.current) return
+    async (name: string): Promise<Board | null> => {
+      if (!repoRef.current) return null
+      setError(null)
       try {
         const board = await repoRef.current.createBoard(name)
         setBoards((prev) => [...prev, board])
         selectBoard(board.id)
+        return board
       } catch (e) {
         setError(e instanceof Error ? e.message : 'No se pudo crear el tablero')
+        return null
       }
     },
     [selectBoard],
