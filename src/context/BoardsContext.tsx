@@ -13,6 +13,7 @@ import type { BoardRepository } from '../data/repository'
 import { LocalBoardRepository } from '../data/localBoardRepository'
 import { SupabaseBoardRepository } from '../data/supabaseBoardRepository'
 import { supabase } from '../lib/supabase'
+import { errMessage } from '../lib/errors'
 import { useAuth } from './AuthContext'
 
 interface BoardsContextValue {
@@ -81,7 +82,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
         const initial = list.find((b) => b.id === stored)?.id ?? list[0].id
         setCurrentBoardId(initial)
       } catch (e) {
-        if (active) setError(e instanceof Error ? e.message : 'Error al cargar los tableros')
+        if (active) setError(errMessage(e, 'Error al cargar los tableros'))
       } finally {
         if (active) setLoading(false)
       }
@@ -101,7 +102,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
         selectBoard(board.id)
         return board
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo crear el tablero')
+        setError(errMessage(e, 'No se pudo crear el tablero'))
         return null
       }
     },
@@ -114,7 +115,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     try {
       await repoRef.current.renameBoard(id, name)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo renombrar')
+      setError(errMessage(e, 'No se pudo renombrar'))
     }
   }, [])
 
@@ -134,7 +135,7 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
         setBoards(remaining)
         if (currentBoardId === id) selectBoard(remaining[0].id)
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo eliminar el tablero')
+        setError(errMessage(e, 'No se pudo eliminar el tablero'))
       }
     },
     [boards, currentBoardId, selectBoard],

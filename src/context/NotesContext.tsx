@@ -13,6 +13,7 @@ import type { NoteRepository } from '../data/repository'
 import { LocalRepository } from '../data/localRepository'
 import { SupabaseRepository } from '../data/supabaseRepository'
 import { supabase } from '../lib/supabase'
+import { errMessage } from '../lib/errors'
 import { useAuth } from './AuthContext'
 import { useBoards } from './BoardsContext'
 
@@ -62,7 +63,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     try {
       setNotes(await repoRef.current.list(boardIdRef.current))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar las notas')
+      setError(errMessage(e, 'Error al cargar las notas'))
     } finally {
       setLoading(false)
     }
@@ -87,7 +88,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
       setNotes((prev) => [...prev, created])
       return created
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo crear la nota')
+      setError(errMessage(e, 'No se pudo crear la nota'))
       return null
     }
   }, [])
@@ -99,7 +100,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     try {
       await repoRef.current.update(id, patch)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar el cambio')
+      setError(errMessage(e, 'No se pudo guardar el cambio'))
       void reload()
     }
   }, [reload])
@@ -120,7 +121,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     try {
       await repoRef.current.remove(id)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo eliminar')
+      setError(errMessage(e, 'No se pudo eliminar'))
       void reload()
     }
   }, [reload])
@@ -131,7 +132,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     try {
       await repoRef.current.emptyTrash(boardIdRef.current)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo vaciar la papelera')
+      setError(errMessage(e, 'No se pudo vaciar la papelera'))
       void reload()
     }
   }, [reload])
