@@ -56,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     function applySession(session: Session | null) {
       setUser(session?.user ?? null)
       setStatus(session?.user ? 'authenticated' : 'unauthenticated')
+      if (session?.user) {
+        // Diagnóstico temporal: id/email de la sesión para comparar con auth.uid().
+        console.log('[auth] user.id =', session.user.id, '| email =', session.user.email)
+      }
     }
 
     return () => {
