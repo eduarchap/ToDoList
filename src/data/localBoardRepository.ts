@@ -1,4 +1,4 @@
-import type { Board } from '../types'
+import type { Board, BoardMember } from '../types'
 import type { BoardRepository } from './repository'
 import { uid } from '../lib/id'
 
@@ -58,6 +58,20 @@ export class LocalBoardRepository implements BoardRepository {
     boards[idx] = { ...boards[idx], name: name.trim() || boards[idx].name }
     save(boards)
     return boards[idx]
+  }
+
+  // Compartir no está disponible sin cuenta.
+  async acceptInvites(): Promise<void> {
+    /* no-op */
+  }
+  async listMembers(): Promise<BoardMember[]> {
+    return []
+  }
+  async invite(): Promise<void> {
+    throw new Error('Compartir requiere una cuenta (modo nube).')
+  }
+  async removeMember(): Promise<void> {
+    /* no-op */
   }
 
   async deleteBoard(id: string): Promise<void> {

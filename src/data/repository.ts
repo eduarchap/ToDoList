@@ -1,4 +1,4 @@
-import type { Board, NewNoteInput, Note } from '../types'
+import type { Board, BoardMember, NewNoteInput, Note } from '../types'
 
 /**
  * Acceso a datos de NOTAS (dentro de un tablero). Dos implementaciones:
@@ -20,4 +20,14 @@ export interface BoardRepository {
   createBoard(name: string): Promise<Board>
   renameBoard(id: string, name: string): Promise<Board>
   deleteBoard(id: string): Promise<void>
+
+  // --- Compartir (solo modo nube) ---
+  /** Convierte invitaciones pendientes (por email) en membresías. Solo nube. */
+  acceptInvites(): Promise<void>
+  /** Miembros aceptados + invitaciones pendientes de un tablero. */
+  listMembers(boardId: string): Promise<BoardMember[]>
+  /** Invita a un email con un rol. */
+  invite(boardId: string, email: string, role: 'editor' | 'viewer'): Promise<void>
+  /** Revoca acceso: por userId (miembro) o por email (invitación pendiente). */
+  removeMember(boardId: string, key: { userId?: string; email?: string }): Promise<void>
 }

@@ -20,6 +20,8 @@ interface Props {
   autoFocus: boolean
   /** Nivel de zoom actual del tablero (para convertir píxeles de pantalla a coordenadas del lienzo). */
   scale: number
+  /** Solo lectura (rol viewer): sin arrastrar, editar, redimensionar ni tirar. */
+  readOnly?: boolean
   onBringToFront: (id: string) => void
   onDragStart: () => void
   onDragMove: (clientX: number, clientY: number) => void
@@ -30,6 +32,7 @@ export function StickyNote({
   note,
   autoFocus,
   scale,
+  readOnly = false,
   onBringToFront,
   onDragStart,
   onDragMove,
@@ -105,6 +108,7 @@ export function StickyNote({
 
   // ---- Arrastre de posición (cabecera) ----
   function onPointerDown(e: React.PointerEvent) {
+    if (readOnly) return
     const target = e.target as HTMLElement
     if (target.closest('button') || target.closest('input') || target.closest('textarea')) return
     e.preventDefault()
@@ -183,25 +187,27 @@ export function StickyNote({
       {/* Cabecera = zona de arrastre */}
       <div
         className="relative flex shrink-0 items-center gap-1 px-1.5 py-1"
-        style={{ backgroundColor: spec.header, touchAction: 'none', cursor: 'grab' }}
+        style={{ backgroundColor: spec.header, touchAction: 'none', cursor: readOnly ? 'default' : 'grab' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
         <GripIcon className="h-4 w-4 opacity-50" />
-        <div className="ml-auto flex items-center gap-0.5">
-          <IconBtn label="Color" onClick={() => setColorOpen((v) => !v)} color={spec.text}>
-            <PaletteIcon className="h-4 w-4" />
-          </IconBtn>
-          <IconBtn label="Fecha" onClick={() => setShowDate((v) => !v)} color={spec.text}>
-            <CalendarIcon className="h-4 w-4" />
-          </IconBtn>
-          <IconBtn label="A la papelera" onClick={() => trashNote(note.id)} color={spec.text}>
-            <TrashIcon className="h-4 w-4" />
-          </IconBtn>
-        </div>
+        {!readOnly && (
+          <div className="ml-auto flex items-center gap-0.5">
+            <IconBtn label="Color" onClick={() => setColorOpen((v) => !v)} color={spec.text}>
+              <PaletteIcon className="h-4 w-4" />
+            </IconBtn>
+            <IconBtn label="Fecha" onClick={() => setShowDate((v) => !v)} color={spec.text}>
+              <CalendarIcon className="h-4 w-4" />
+            </IconBtn>
+            <IconBtn label="A la papelera" onClick={() => trashNote(note.id)} color={spec.text}>
+              <TrashIcon className="h-4 w-4" />
+            </IconBtn>
+          </div>
+        )}
 
-        {colorOpen && (
+        {colorOpen && !readOnly && (
           <ColorMenu
             value={note.color}
             onSelect={(c) => patchNote(note.id, { color: c })}
@@ -211,25 +217,30 @@ export function StickyNote({
       </div>
 
       {/* Título */}
-      <input
-        ref={titleRef}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onBlur={commitTitle}
-        placeholder="Título"
-        className="w-full shrink-0 cursor-text border-b border-black/10 bg-transparent px-2.5 pb-1.5 pt-1.5 text-sm font-bold placeholder:font-medium placeholder:opacity-40 focus:outline-none"
-        style={{ color: spec.text }}
-      />
+      {(!readOnly || title) && (
+        <input
+          ref={titleRef}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={commitTitle}
+          placeholder="Título"
+          readOnly={readOnly}
+          className="w-full shrink-0 cursor-text border-b border-black/10 bg-transparent px-2.5 pb-1.5 pt-1.5 text-sm font-bold placeholder:font-medium placeholder:opacity-40 focus:outline-none"
+          style={{ color: spec.text }}
+        />
+      )}
 
       <textarea
         ref={textRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={commitText}
-        placeholder="Escribe aquí…"
+        placeholder={readOnly ? '' : 'Escribe aquí…'}
+        readOnly={readOnly}
         rows={2}
         className={[
-          'w-full cursor-text resize-none bg-transparent px-2.5 py-2 text-sm leading-snug placeholder:opacity-40 focus:outline-none',
+          'w-full resize-none bg-transparent px-2.5 py-2 text-sm leading-snug placeholder:opacity-40 focus:outline-none',
+          readOnly ? 'cursor-default' : 'cursor-text',
           autoHeight ? '' : 'min-h-0 flex-1 overflow-auto',
         ].join(' ')}
         style={{ color: spec.text }}
@@ -241,10 +252,11 @@ export function StickyNote({
           <input
             type="date"
             value={note.dueDate ?? ''}
+            disabled={readOnly}
             onChange={(e) => patchNote(note.id, { dueDate: e.target.value || null })}
             className={`bg-transparent text-xs focus:outline-none ${overdue ? 'font-bold text-red-800' : ''}`}
           />
-          {note.dueDate && (
+          {note.dueDate && !readOnly && (
             <>
               <span className="font-medium">{formatDueLabel(note.dueDate)}</span>
               <button
@@ -263,21 +275,23 @@ export function StickyNote({
         </div>
       )}
 
-      {/* Tirador de redimensionado */}
-      <div
-        onPointerDown={onResizeDown}
-        onPointerMove={onResizeMove}
-        onPointerUp={onResizeUp}
-        onPointerCancel={onResizeUp}
-        className="absolute bottom-0 right-0 flex h-5 w-5 items-end justify-end p-0.5"
-        style={{ cursor: 'nwse-resize', touchAction: 'none' }}
-        title="Redimensionar"
-        aria-label="Redimensionar"
-      >
-        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 opacity-40" style={{ color: spec.text }}>
-          <path d="M9 1 1 9M9 5 5 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
-        </svg>
-      </div>
+      {/* Tirador de redimensionado (oculto en solo lectura) */}
+      {!readOnly && (
+        <div
+          onPointerDown={onResizeDown}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeUp}
+          onPointerCancel={onResizeUp}
+          className="absolute bottom-0 right-0 flex h-5 w-5 items-end justify-end p-0.5"
+          style={{ cursor: 'nwse-resize', touchAction: 'none' }}
+          title="Redimensionar"
+          aria-label="Redimensionar"
+        >
+          <svg viewBox="0 0 10 10" className="h-2.5 w-2.5 opacity-40" style={{ color: spec.text }}>
+            <path d="M9 1 1 9M9 5 5 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+          </svg>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useBoards } from '../context/BoardsContext'
 import { BoardSwitcher } from './BoardSwitcher'
-import { CloudIcon, DeviceIcon, LogOutIcon, TrashIcon } from './icons'
+import { ShareDialog } from './ShareDialog'
+import { CloudIcon, DeviceIcon, LogOutIcon, ShareIcon, TrashIcon } from './icons'
 
 interface Props {
   trashCount: number
@@ -9,7 +12,13 @@ interface Props {
 
 export function TopBar({ trashCount, onOpenTrash }: Props) {
   const { status, user, signOut } = useAuth()
+  const { currentBoard } = useBoards()
   const cloud = status === 'authenticated'
+  const [shareOpen, setShareOpen] = useState(false)
+
+  const isOwner = currentBoard?.role === 'owner'
+  const isShared = !!currentBoard && currentBoard.role !== 'owner'
+  const isViewer = currentBoard?.role === 'viewer'
 
   return (
     <header className="z-40 flex items-center gap-2 border-b border-slate-800 bg-slate-900/80 px-3 py-2 backdrop-blur">
@@ -21,22 +30,40 @@ export function TopBar({ trashCount, onOpenTrash }: Props) {
           </svg>
         </div>
         <BoardSwitcher />
+        {isShared && (
+          <span className="hidden shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400 sm:inline">
+            {currentBoard!.role === 'editor' ? 'Compartido · editor' : 'Compartido · solo lectura'}
+          </span>
+        )}
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
-        <button
-          onClick={onOpenTrash}
-          className="relative flex items-center gap-1.5 rounded-lg border border-slate-800 px-2.5 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800"
-          title="Papelera"
-        >
-          <TrashIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">Papelera</span>
-          {trashCount > 0 && (
-            <span className="min-w-4 rounded-full bg-slate-700 px-1 text-[10px] font-semibold leading-4 text-slate-200">
-              {trashCount}
-            </span>
-          )}
-        </button>
+        {cloud && isOwner && (
+          <button
+            onClick={() => setShareOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 px-2.5 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800"
+            title="Compartir tablero"
+          >
+            <ShareIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Compartir</span>
+          </button>
+        )}
+
+        {!isViewer && (
+          <button
+            onClick={onOpenTrash}
+            className="relative flex items-center gap-1.5 rounded-lg border border-slate-800 px-2.5 py-1.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800"
+            title="Papelera"
+          >
+            <TrashIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Papelera</span>
+            {trashCount > 0 && (
+              <span className="min-w-4 rounded-full bg-slate-700 px-1 text-[10px] font-semibold leading-4 text-slate-200">
+                {trashCount}
+              </span>
+            )}
+          </button>
+        )}
 
         <span
           className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400"
@@ -56,6 +83,10 @@ export function TopBar({ trashCount, onOpenTrash }: Props) {
           </button>
         )}
       </div>
+
+      {shareOpen && currentBoard && (
+        <ShareDialog board={currentBoard} onClose={() => setShareOpen(false)} />
+      )}
     </header>
   )
 }

@@ -9,7 +9,8 @@ import { PlusIcon, TrashIcon } from './icons'
 
 export function Board() {
   const { notes, loading, error, maxZ, addNote, patchNote, trashNote } = useNotes()
-  const { error: boardsError } = useBoards()
+  const { error: boardsError, currentBoard } = useBoards()
+  const readOnly = currentBoard?.role === 'viewer'
 
   const viewportRef = useRef<HTMLDivElement>(null)
   const trashZoneRef = useRef<HTMLDivElement>(null)
@@ -248,6 +249,7 @@ export function Board() {
                 note={note}
                 autoFocus={note.id === autoFocusId}
                 scale={scale}
+                readOnly={readOnly}
                 onBringToFront={bringToFront}
                 onDragStart={() => setDragging(true)}
                 onDragMove={handleDragMove}
@@ -259,8 +261,12 @@ export function Board() {
 
         {!loading && visible.length === 0 && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <p className="text-lg font-medium text-slate-400">Tu pizarra está vacía</p>
-            <p className="mt-1 text-sm text-slate-500">Pulsa el botón + para crear tu primera nota.</p>
+            <p className="text-lg font-medium text-slate-400">
+              {readOnly ? 'Este tablero está vacío' : 'Tu pizarra está vacía'}
+            </p>
+            {!readOnly && (
+              <p className="mt-1 text-sm text-slate-500">Pulsa el botón + para crear tu primera nota.</p>
+            )}
           </div>
         )}
       </div>
@@ -278,15 +284,17 @@ export function Board() {
         <ZoomBtn label="Acercar" onClick={() => zoomButton(1.2)}>+</ZoomBtn>
       </div>
 
-      {/* Botón flotante para añadir nota */}
-      <button
-        onClick={handleAdd}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-900/40 transition hover:bg-brand-500 active:scale-95"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-        aria-label="Añadir nota"
-      >
-        <PlusIcon className="h-7 w-7" />
-      </button>
+      {/* Botón flotante para añadir nota (oculto en solo lectura) */}
+      {!readOnly && (
+        <button
+          onClick={handleAdd}
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg shadow-brand-900/40 transition hover:bg-brand-500 active:scale-95"
+          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          aria-label="Añadir nota"
+        >
+          <PlusIcon className="h-7 w-7" />
+        </button>
+      )}
 
       {/* Zona para soltar en la papelera (aparece al arrastrar) */}
       {dragging && (

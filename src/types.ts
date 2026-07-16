@@ -19,6 +19,15 @@ export interface Board {
   createdAt: string
 }
 
+/** Persona con acceso a un tablero (aceptada) o invitación pendiente. */
+export interface BoardMember {
+  /** id de usuario si ya aceptó; null si es invitación pendiente. */
+  userId: string | null
+  email: string
+  role: 'editor' | 'viewer'
+  pending: boolean
+}
+
 export interface Note {
   id: string
   /** Tablero al que pertenece la nota. */

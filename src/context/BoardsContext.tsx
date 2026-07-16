@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Board } from '../types'
+import type { Board, BoardMember } from '../types'
 import type { BoardRepository } from '../data/repository'
 import { LocalBoardRepository } from '../data/localBoardRepository'
 import { SupabaseBoardRepository } from '../data/supabaseBoardRepository'
@@ -26,6 +26,9 @@ interface BoardsContextValue {
   createBoard(name: string): Promise<Board | null>
   renameBoard(id: string, name: string): Promise<void>
   deleteBoard(id: string): Promise<void>
+  listMembers(boardId: string): Promise<BoardMember[]>
+  invite(boardId: string, email: string, role: 'editor' | 'viewer'): Promise<void>
+  removeMember(boardId: string, key: { userId?: string; email?: string }): Promise<void>
 }
 
 const BoardsContext = createContext<BoardsContextValue | null>(null)
@@ -70,6 +73,8 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     setError(null)
     ;(async () => {
       try {
+        // Convierte invitaciones pendientes en acceso antes de listar (ignora si no aplica).
+        await repo.acceptInvites().catch(() => {})
         let list = await repo.listBoards()
         // Nuevo usuario sin tableros → crea uno por defecto.
         if (list.length === 0) {
@@ -141,6 +146,21 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
     [boards, currentBoardId, selectBoard],
   )
 
+  const listMembers = useCallback(
+    (boardId: string) => repoRef.current?.listMembers(boardId) ?? Promise.resolve([]),
+    [],
+  )
+  const invite = useCallback(
+    (boardId: string, email: string, role: 'editor' | 'viewer') =>
+      repoRef.current?.invite(boardId, email, role) ?? Promise.resolve(),
+    [],
+  )
+  const removeMember = useCallback(
+    (boardId: string, key: { userId?: string; email?: string }) =>
+      repoRef.current?.removeMember(boardId, key) ?? Promise.resolve(),
+    [],
+  )
+
   const currentBoard = useMemo(
     () => boards.find((b) => b.id === currentBoardId) ?? null,
     [boards, currentBoardId],
@@ -157,8 +177,11 @@ export function BoardsProvider({ children }: { children: ReactNode }) {
       createBoard,
       renameBoard,
       deleteBoard,
+      listMembers,
+      invite,
+      removeMember,
     }),
-    [boards, currentBoard, currentBoardId, loading, error, selectBoard, createBoard, renameBoard, deleteBoard],
+    [boards, currentBoard, currentBoardId, loading, error, selectBoard, createBoard, renameBoard, deleteBoard, listMembers, invite, removeMember],
   )
 
   return <BoardsContext.Provider value={value}>{children}</BoardsContext.Provider>

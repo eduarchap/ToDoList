@@ -119,6 +119,13 @@ export const PaletteIcon = (p: IconProps) => (
   </svg>
 )
 
+export const ShareIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M9 12a3 3 0 1 0 0-.01M17 6a3 3 0 1 0 0-.01M17 18a3 3 0 1 0 0-.01" />
+    <path d="m11.6 10.6 3.8-2.2M11.6 13.4l3.8 2.2" />
+  </svg>
+)
+
 export const ChevronDownIcon = (p: IconProps) => (
   <svg {...base} {...p}>
     <path d="m6 9 6 6 6-6" />
