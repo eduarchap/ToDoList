@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNotes } from '../context/NotesContext'
-import { BOARD_H, BOARD_W, NOTE_W, clamp } from '../lib/board'
+import { BOARD_H, BOARD_W, MAX_SCALE, MIN_SCALE, NOTE_W, clamp } from '../lib/board'
 import { StickyNote } from './StickyNote'
 import { TopBar } from './TopBar'
 import { TrashDrawer } from './TrashDrawer'
@@ -16,6 +16,14 @@ export function Board() {
   const [autoFocusId, setAutoFocusId] = useState<string | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
 
+  const [scale, setScale] = useState(1)
+  const scaleRef = useRef(scale)
+  scaleRef.current = scale
+  // Posición de scroll a aplicar tras un cambio de zoom (para mantener el punto bajo el cursor).
+  const scrollTargetRef = useRef<{ left: number; top: number } | null>(null)
+  const [panning, setPanning] = useState(false)
+  const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null)
+
   const visible = notes.filter((n) => !n.trashed)
   const trashCount = notes.length - visible.length
 
@@ -26,6 +34,81 @@ export function Board() {
     vp.scrollLeft = (BOARD_W - vp.clientWidth) / 2
     vp.scrollTop = Math.max(0, BOARD_H / 6)
   }, [])
+
+  // Aplica el reposicionamiento de scroll después de que el lienzo se reescale.
+  useLayoutEffect(() => {
+    const vp = viewportRef.current
+    if (vp && scrollTargetRef.current) {
+      vp.scrollLeft = scrollTargetRef.current.left
+      vp.scrollTop = scrollTargetRef.current.top
+      scrollTargetRef.current = null
+    }
+  }, [scale])
+
+  /** Aplica un nuevo zoom manteniendo fijo el punto (cx, cy) medido desde la esquina del viewport. */
+  const zoomTo = useCallback((next: number, cx: number, cy: number) => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const old = scaleRef.current
+    const clamped = clamp(next, MIN_SCALE, MAX_SCALE)
+    if (clamped === old) return
+    const bx = (vp.scrollLeft + cx) / old
+    const by = (vp.scrollTop + cy) / old
+    scrollTargetRef.current = { left: bx * clamped - cx, top: by * clamped - cy }
+    setScale(clamped)
+  }, [])
+
+  // Zoom con la rueda (listener nativo no pasivo para poder hacer preventDefault).
+  useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    function onWheel(e: WheelEvent) {
+      e.preventDefault()
+      const rect = vp!.getBoundingClientRect()
+      const factor = Math.exp(-e.deltaY * 0.0015)
+      zoomTo(scaleRef.current * factor, e.clientX - rect.left, e.clientY - rect.top)
+    }
+    vp.addEventListener('wheel', onWheel, { passive: false })
+    return () => vp.removeEventListener('wheel', onWheel)
+  }, [zoomTo])
+
+  function zoomButton(factor: number) {
+    const vp = viewportRef.current
+    if (!vp) return
+    zoomTo(scaleRef.current * factor, vp.clientWidth / 2, vp.clientHeight / 2)
+  }
+
+  function resetZoom() {
+    const vp = viewportRef.current
+    if (!vp) return
+    zoomTo(1, vp.clientWidth / 2, vp.clientHeight / 2)
+  }
+
+  // Pan con clic izquierdo sostenido (solo ratón; en táctil se usa el arrastre nativo).
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return
+    if ((e.target as HTMLElement).closest('[data-note]')) return // clic sobre nota → no pan
+    const vp = viewportRef.current
+    if (!vp) return
+    panRef.current = { x: e.clientX, y: e.clientY, sl: vp.scrollLeft, st: vp.scrollTop }
+    setPanning(true)
+    vp.setPointerCapture(e.pointerId)
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!panRef.current) return
+    const vp = viewportRef.current
+    if (!vp) return
+    vp.scrollLeft = panRef.current.sl - (e.clientX - panRef.current.x)
+    vp.scrollTop = panRef.current.st - (e.clientY - panRef.current.y)
+  }
+
+  function endPan(e: React.PointerEvent) {
+    if (!panRef.current) return
+    panRef.current = null
+    setPanning(false)
+    viewportRef.current?.releasePointerCapture(e.pointerId)
+  }
 
   const isOverZone = useCallback((cx: number, cy: number) => {
     const r = trashZoneRef.current?.getBoundingClientRect()
@@ -59,12 +142,13 @@ export function Board() {
 
   async function handleAdd() {
     const vp = viewportRef.current
+    const s = scaleRef.current
     const jitter = () => Math.round(Math.random() * 40 - 20)
     let x = BOARD_W / 2 - NOTE_W / 2
     let y = BOARD_H / 6
     if (vp) {
-      x = vp.scrollLeft + vp.clientWidth / 2 - NOTE_W / 2 + jitter()
-      y = vp.scrollTop + vp.clientHeight / 3 + jitter()
+      x = (vp.scrollLeft + vp.clientWidth / 2) / s - NOTE_W / 2 + jitter()
+      y = (vp.scrollTop + vp.clientHeight / 3) / s + jitter()
     }
     const created = await addNote({
       x: clamp(x, 0, BOARD_W - NOTE_W),
@@ -74,7 +158,6 @@ export function Board() {
     if (created) setAutoFocusId(created.id)
   }
 
-  // Limpia el autofocus tras aplicarse.
   useEffect(() => {
     if (!autoFocusId) return
     const t = setTimeout(() => setAutoFocusId(null), 400)
@@ -93,30 +176,39 @@ export function Board() {
 
       <div
         ref={viewportRef}
-        className="relative min-h-0 flex-1 overflow-auto bg-slate-950"
+        className={`relative min-h-0 flex-1 overflow-auto bg-slate-950 ${panning ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
         style={{ touchAction: dragging ? 'none' : 'auto' }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
       >
-        <div
-          className="relative"
-          style={{
-            width: BOARD_W,
-            height: BOARD_H,
-            backgroundImage:
-              'radial-gradient(circle, rgba(148,163,184,0.15) 1px, transparent 1px)',
-            backgroundSize: '26px 26px',
-          }}
-        >
-          {visible.map((note) => (
-            <StickyNote
-              key={note.id}
-              note={note}
-              autoFocus={note.id === autoFocusId}
-              onBringToFront={bringToFront}
-              onDragStart={() => setDragging(true)}
-              onDragMove={handleDragMove}
-              onDrop={handleDrop}
-            />
-          ))}
+        {/* Sizer: ocupa el tamaño escalado para que el scroll (pan) tenga el rango correcto. */}
+        <div style={{ width: BOARD_W * scale, height: BOARD_H * scale }}>
+          <div
+            className="relative origin-top-left"
+            style={{
+              width: BOARD_W,
+              height: BOARD_H,
+              transform: `scale(${scale})`,
+              backgroundImage:
+                'radial-gradient(circle, rgba(148,163,184,0.15) 1px, transparent 1px)',
+              backgroundSize: '26px 26px',
+            }}
+          >
+            {visible.map((note) => (
+              <StickyNote
+                key={note.id}
+                note={note}
+                autoFocus={note.id === autoFocusId}
+                scale={scale}
+                onBringToFront={bringToFront}
+                onDragStart={() => setDragging(true)}
+                onDragMove={handleDragMove}
+                onDrop={handleDrop}
+              />
+            ))}
+          </div>
         </div>
 
         {!loading && visible.length === 0 && (
@@ -125,6 +217,19 @@ export function Board() {
             <p className="mt-1 text-sm text-slate-500">Pulsa el botón + para crear tu primera nota.</p>
           </div>
         )}
+      </div>
+
+      {/* Controles de zoom */}
+      <div className="fixed bottom-6 left-4 z-40 flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/90 p-1 shadow-lg backdrop-blur" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+        <ZoomBtn label="Alejar" onClick={() => zoomButton(1 / 1.2)}>−</ZoomBtn>
+        <button
+          onClick={resetZoom}
+          className="min-w-12 rounded-lg px-1 py-1 text-xs font-semibold text-slate-300 transition hover:bg-slate-800"
+          title="Restablecer zoom"
+        >
+          {Math.round(scale * 100)}%
+        </button>
+        <ZoomBtn label="Acercar" onClick={() => zoomButton(1.2)}>+</ZoomBtn>
       </div>
 
       {/* Botón flotante para añadir nota */}
@@ -158,5 +263,26 @@ export function Board() {
 
       <TrashDrawer open={trashOpen} onClose={() => setTrashOpen(false)} />
     </div>
+  )
+}
+
+function ZoomBtn({
+  children,
+  label,
+  onClick,
+}: {
+  children: React.ReactNode
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-xl font-semibold text-slate-200 transition hover:bg-slate-800"
+    >
+      {children}
+    </button>
   )
 }

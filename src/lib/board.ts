@@ -5,6 +5,10 @@ export const BOARD_H = 1600
 /** Anchura fija de una nota. */
 export const NOTE_W = 184
 
+/** Límites de zoom del lienzo. */
+export const MIN_SCALE = 0.4
+export const MAX_SCALE = 2.5
+
 export function clamp(v: number, min: number, max: number): number {
   return Math.min(Math.max(v, min), max)
 }

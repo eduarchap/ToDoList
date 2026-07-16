@@ -10,6 +10,8 @@ import { CalendarIcon, GripIcon, PaletteIcon, TrashIcon, XIcon } from './icons'
 interface Props {
   note: Note
   autoFocus: boolean
+  /** Nivel de zoom actual del tablero (para convertir píxeles de pantalla a coordenadas del lienzo). */
+  scale: number
   onBringToFront: (id: string) => void
   onDragStart: () => void
   onDragMove: (clientX: number, clientY: number) => void
@@ -19,6 +21,7 @@ interface Props {
 export function StickyNote({
   note,
   autoFocus,
+  scale,
   onBringToFront,
   onDragStart,
   onDragMove,
@@ -78,8 +81,9 @@ export function StickyNote({
 
   function onPointerMove(e: React.PointerEvent) {
     if (!draggingRef.current || !dragOrigin.current) return
-    const dx = e.clientX - dragOrigin.current.px
-    const dy = e.clientY - dragOrigin.current.py
+    // Convierte el desplazamiento en píxeles de pantalla a coordenadas del lienzo (÷ zoom).
+    const dx = (e.clientX - dragOrigin.current.px) / scale
+    const dy = (e.clientY - dragOrigin.current.py) / scale
     const nx = clamp(dragOrigin.current.ox + dx, 0, BOARD_W - NOTE_W)
     const ny = clamp(dragOrigin.current.oy + dy, 0, BOARD_H - 60)
     setPosition(nx, ny)
@@ -102,7 +106,8 @@ export function StickyNote({
 
   return (
     <div
-      className="absolute select-none rounded-lg shadow-xl ring-1 ring-black/10 transition-shadow"
+      data-note
+      className="absolute cursor-default select-none rounded-lg shadow-xl ring-1 ring-black/10 transition-shadow"
       style={{ left: pos.x, top: pos.y, width: NOTE_W, zIndex: note.z + 10, backgroundColor: spec.bg, color: spec.text }}
     >
       {/* Cabecera = zona de arrastre */}
@@ -148,7 +153,7 @@ export function StickyNote({
         onBlur={commitText}
         placeholder="Escribe aquí…"
         rows={2}
-        className="w-full resize-none bg-transparent px-2.5 py-2 text-sm leading-snug placeholder:opacity-40 focus:outline-none"
+        className="w-full cursor-text resize-none bg-transparent px-2.5 py-2 text-sm leading-snug placeholder:opacity-40 focus:outline-none"
         style={{ color: spec.text }}
       />
 
