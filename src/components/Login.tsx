@@ -41,9 +41,9 @@ export function Login() {
           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white">
             <CloudIcon className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Tareas</h1>
+          <h1 className="text-2xl font-bold text-slate-100">Pizarra</h1>
           <p className="mt-1 text-sm text-slate-400">
-            {mode === 'signin' ? 'Inicia sesión para sincronizar tus tareas' : 'Crea tu cuenta gratuita'}
+            {mode === 'signin' ? 'Inicia sesión para sincronizar tus notas' : 'Crea tu cuenta gratuita'}
           </p>
         </div>
 

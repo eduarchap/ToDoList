@@ -1,8 +1,8 @@
-# Tareas — Gestor de tareas (tipo Todoist)
+# Pizarra de notas (post-its)
 
-Aplicación web **responsive** e **instalable como app** (PWA) para registrar tareas
-rápidamente, ponerles fecha/plazo y prioridad, y mantenerlas organizadas.
-Sube automáticamente arriba lo más urgente (score de prioridad + cercanía del vencimiento).
+Aplicación web **responsive** e **instalable como app** (PWA): una pizarra libre donde
+colocas notas adhesivas, las arrastras a donde quieras, les pones **color** y **fecha**
+opcional, y las tiras a una **papelera recuperable**.
 
 - **Stack:** React + Vite + TypeScript + Tailwind CSS.
 - **Datos:** funciona en **modo local** (localStorage) sin configurar nada, y en
@@ -19,63 +19,54 @@ npm run icons   # genera los iconos de la PWA (solo hace falta una vez)
 npm run dev
 ```
 
-Abre la URL que muestra Vite (normalmente `http://localhost:5173`).
 Sin configurar Supabase, la app arranca directamente en **modo local**.
 
-## 2. Activar la sincronización en la nube (opcional pero recomendado)
+## 2. Sincronización en la nube (Supabase)
 
-1. Crea un proyecto gratis en [supabase.com](https://supabase.com).
-2. En **SQL Editor**, pega y ejecuta el contenido de [`supabase/schema.sql`](supabase/schema.sql).
-   Crea la tabla `tasks` con seguridad por usuario (RLS).
-3. En **Project Settings → API**, copia:
-   - `Project URL`
-   - `anon public` key
-4. Crea un archivo `.env` (copiando `.env.example`) y rellena:
+1. Crea/usa un proyecto en [supabase.com](https://supabase.com).
+2. En **SQL Editor**, ejecuta el contenido de [`supabase/schema.sql`](supabase/schema.sql).
+   Crea la tabla `notes` con seguridad por usuario (RLS).
+3. En **Project Settings → API**, copia la **Project URL** y la **anon/publishable key**.
+4. Crea un `.env` (ver `.env.example`) con:
 
    ```
    VITE_SUPABASE_URL=https://xxxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=eyJhbGci...
+   VITE_SUPABASE_ANON_KEY=...
    ```
 
-5. Reinicia `npm run dev`. Ahora verás la pantalla de acceso: regístrate con tu
-   correo y tus tareas se sincronizarán en todos tus dispositivos.
+5. `npm run dev` → aparece la pantalla de acceso; regístrate y tus notas se sincronizan.
 
-> En **Authentication → Providers → Email** puedes desactivar "Confirm email"
-> mientras pruebas, para entrar sin confirmar el correo.
+## 3. Desplegar en Netlify
 
-## 3. Publicar en Netlify
+Ya configurado con la CLI de Netlify:
 
-1. Sube este proyecto a un repositorio de GitHub.
-2. En Netlify: **Add new site → Import an existing project** y elige el repo.
-3. Netlify detecta [`netlify.toml`](netlify.toml): build `npm run build`, publish `dist`.
-4. Si usas la nube, añade las variables en **Site settings → Environment variables**:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-5. Deploy. En la URL de Netlify, desde el móvil, usa "Añadir a pantalla de inicio"
-   para instalarla como app.
+```bash
+npm run deploy          # build + publish a producción
+npm run deploy:preview  # build + deploy a una URL temporal de prueba
+```
 
-> Tras publicar, añade la URL de Netlify en Supabase
-> **Authentication → URL Configuration → Site URL / Redirect URLs**.
+Las variables `VITE_SUPABASE_*` deben estar en el `.env` local (el build es local y las
+incrusta) y también en Netlify (*Site settings → Environment variables*).
 
 ---
 
-## Cómo funciona la priorización automática
+## Cómo funciona la pizarra
 
-Cada tarea recibe un *score de urgencia* (ver [`src/lib/priority.ts`](src/lib/priority.ts))
-que combina:
-
-- **Prioridad** explícita P1–P4.
-- **Cercanía del vencimiento:** vencidas > hoy > próximos días > lejanas > sin fecha.
-
-Las listas se ordenan por ese score, así que lo urgente aparece siempre arriba,
-agrupado en secciones (Vencidas / Hoy / Próximas / Sin fecha).
+- **Añadir**: botón **+** flotante. La nota aparece en el centro de la vista, lista para escribir.
+- **Mover**: arrastra una nota por su **cabecera** (la franja superior). En el lienzo grande
+  puedes desplazarte (pan) arrastrando el fondo.
+- **Color**: botón de paleta en la nota → elige entre 7 colores.
+- **Fecha**: botón de calendario → fecha opcional (se marca en rojo si está vencida).
+- **Tirar**: arrastra la nota a la **zona de papelera** que aparece abajo, o pulsa 🗑.
+- **Papelera**: botón *Papelera* arriba → **restaurar** notas, **eliminar** una a una, o
+  **vaciar** definitivamente.
 
 ## Estructura
 
 ```
 src/
   data/        capa de datos: interfaz + LocalRepository y SupabaseRepository
-  context/     AuthContext (sesión) y TasksContext (estado de tareas)
-  lib/         fechas, score de urgencia, agrupación, cliente Supabase
-  components/  UI (QuickAdd, TaskList, TaskItem, navegación, login…)
+  context/     AuthContext (sesión) y NotesContext (estado de las notas)
+  lib/         board (dimensiones), colors (paleta), date, id, supabase
+  components/  Board, StickyNote, ColorMenu, TrashDrawer, TopBar, Login…
 ```

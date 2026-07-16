@@ -101,3 +101,31 @@ export const DeviceIcon = (p: IconProps) => (
     <path d="M12 18h.01" />
   </svg>
 )
+
+export const RestoreIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M3 7v6h6" />
+    <path d="M3.51 13a9 9 0 1 0 2.13-9.36L3 7" />
+  </svg>
+)
+
+export const PaletteIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <circle cx="13.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
+    <circle cx="17.5" cy="10.5" r="1.2" fill="currentColor" stroke="none" />
+    <circle cx="8.5" cy="7.5" r="1.2" fill="currentColor" stroke="none" />
+    <circle cx="6.5" cy="12.5" r="1.2" fill="currentColor" stroke="none" />
+    <path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-.9-.5-1.3-.3-.3-.5-.8-.5-1.2 0-1.1.9-2 2-2h2.3A4.7 4.7 0 0 0 22 10.7C22 5.9 17.5 2 12 2z" />
+  </svg>
+)
+
+export const GripIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <circle cx="9" cy="6" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="9" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="9" cy="18" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="6" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="18" r="1.3" fill="currentColor" stroke="none" />
+  </svg>
+)

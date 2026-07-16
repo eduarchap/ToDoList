@@ -1,112 +1,117 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { NewTaskInput, Priority, Task } from '../types'
-import type { TaskRepository } from './repository'
+import type { NewNoteInput, Note, NoteColor } from '../types'
+import type { NoteRepository } from './repository'
+import { DEFAULT_COLOR } from '../lib/colors'
 
-/** Fila tal como se guarda en la tabla `tasks` de Supabase (snake_case). */
-interface TaskRow {
+/** Fila tal como se guarda en la tabla `notes` de Supabase (snake_case). */
+interface NoteRow {
   id: string
   user_id: string
-  title: string
-  notes: string | null
+  text: string
+  color: string
+  x: number
+  y: number
+  z: number
   due_date: string | null
-  priority: number
-  completed: boolean
-  completed_at: string | null
+  trashed: boolean
+  trashed_at: string | null
   created_at: string
   updated_at: string
-  sort_order: number
 }
 
-function rowToTask(r: TaskRow): Task {
+function rowToNote(r: NoteRow): Note {
   return {
     id: r.id,
-    title: r.title,
-    notes: r.notes,
+    text: r.text ?? '',
+    color: (r.color as NoteColor) ?? DEFAULT_COLOR,
+    x: Number(r.x) || 0,
+    y: Number(r.y) || 0,
+    z: r.z ?? 0,
     dueDate: r.due_date,
-    priority: (r.priority as Priority) ?? 4,
-    completed: r.completed,
-    completedAt: r.completed_at,
+    trashed: r.trashed,
+    trashedAt: r.trashed_at,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
-    sortOrder: r.sort_order ?? 0,
   }
 }
 
-/** Traduce un patch de Task (camelCase) a columnas de BD (snake_case). */
-function patchToRow(patch: Partial<Task>): Record<string, unknown> {
+/** Traduce un patch de Note (camelCase) a columnas de BD (snake_case). */
+function patchToRow(patch: Partial<Note>): Record<string, unknown> {
   const row: Record<string, unknown> = {}
-  if ('title' in patch) row.title = patch.title
-  if ('notes' in patch) row.notes = patch.notes
+  if ('text' in patch) row.text = patch.text
+  if ('color' in patch) row.color = patch.color
+  if ('x' in patch) row.x = patch.x
+  if ('y' in patch) row.y = patch.y
+  if ('z' in patch) row.z = patch.z
   if ('dueDate' in patch) row.due_date = patch.dueDate
-  if ('priority' in patch) row.priority = patch.priority
-  if ('completed' in patch) row.completed = patch.completed
-  if ('completedAt' in patch) row.completed_at = patch.completedAt
-  if ('sortOrder' in patch) row.sort_order = patch.sortOrder
+  if ('trashed' in patch) row.trashed = patch.trashed
+  if ('trashedAt' in patch) row.trashed_at = patch.trashedAt
   row.updated_at = new Date().toISOString()
   return row
 }
 
 /** Persistencia en la nube con Supabase (sincroniza entre dispositivos). */
-export class SupabaseRepository implements TaskRepository {
+export class SupabaseRepository implements NoteRepository {
   constructor(
     private readonly client: SupabaseClient,
     private readonly userId: string,
   ) {}
 
-  async list(): Promise<Task[]> {
+  async list(): Promise<Note[]> {
     const { data, error } = await this.client
-      .from('tasks')
+      .from('notes')
       .select('*')
       .eq('user_id', this.userId)
-      .order('created_at', { ascending: false })
+      .order('z', { ascending: true })
     if (error) throw error
-    return (data as TaskRow[]).map(rowToTask)
+    return (data as NoteRow[]).map(rowToNote)
   }
 
-  async create(input: NewTaskInput): Promise<Task> {
+  async create(input: NewNoteInput): Promise<Note> {
     const { data, error } = await this.client
-      .from('tasks')
+      .from('notes')
       .insert({
         user_id: this.userId,
-        title: input.title.trim(),
-        notes: input.notes?.trim() || null,
+        text: input.text ?? '',
+        color: input.color ?? DEFAULT_COLOR,
+        x: input.x,
+        y: input.y,
+        z: input.z ?? 0,
         due_date: input.dueDate ?? null,
-        priority: input.priority ?? 4,
-        completed: false,
       })
       .select()
       .single()
     if (error) throw error
-    return rowToTask(data as TaskRow)
+    return rowToNote(data as NoteRow)
   }
 
-  async update(id: string, patch: Partial<Task>): Promise<Task> {
+  async update(id: string, patch: Partial<Note>): Promise<Note> {
     const { data, error } = await this.client
-      .from('tasks')
+      .from('notes')
       .update(patchToRow(patch))
       .eq('id', id)
       .eq('user_id', this.userId)
       .select()
       .single()
     if (error) throw error
-    return rowToTask(data as TaskRow)
+    return rowToNote(data as NoteRow)
   }
 
   async remove(id: string): Promise<void> {
     const { error } = await this.client
-      .from('tasks')
+      .from('notes')
       .delete()
       .eq('id', id)
       .eq('user_id', this.userId)
     if (error) throw error
   }
 
-  async clearCompleted(): Promise<number> {
+  async emptyTrash(): Promise<number> {
     const { data, error } = await this.client
-      .from('tasks')
+      .from('notes')
       .delete()
       .eq('user_id', this.userId)
-      .eq('completed', true)
+      .eq('trashed', true)
       .select('id')
     if (error) throw error
     return (data as { id: string }[]).length

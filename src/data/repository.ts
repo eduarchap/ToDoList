@@ -1,16 +1,16 @@
-import type { NewTaskInput, Task } from '../types'
+import type { NewNoteInput, Note } from '../types'
 
 /**
  * Contrato común de acceso a datos. Dos implementaciones lo cumplen:
- *  - LocalRepository   (localStorage, un solo dispositivo)
+ *  - LocalRepository    (localStorage, un solo dispositivo)
  *  - SupabaseRepository (nube, sincroniza entre dispositivos)
  * El resto de la app no sabe cuál está usando.
  */
-export interface TaskRepository {
-  list(): Promise<Task[]>
-  create(input: NewTaskInput): Promise<Task>
-  update(id: string, patch: Partial<Task>): Promise<Task>
+export interface NoteRepository {
+  list(): Promise<Note[]>
+  create(input: NewNoteInput): Promise<Note>
+  update(id: string, patch: Partial<Note>): Promise<Note>
   remove(id: string): Promise<void>
-  /** Borra todas las tareas completadas. Devuelve cuántas eliminó. */
-  clearCompleted(): Promise<number>
+  /** Borra definitivamente todas las notas de la papelera. Devuelve cuántas eliminó. */
+  emptyTrash(): Promise<number>
 }
