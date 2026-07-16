@@ -1,16 +1,23 @@
-import type { NewNoteInput, Note } from '../types'
+import type { Board, NewNoteInput, Note } from '../types'
 
 /**
- * Contrato común de acceso a datos. Dos implementaciones lo cumplen:
+ * Acceso a datos de NOTAS (dentro de un tablero). Dos implementaciones:
  *  - LocalRepository    (localStorage, un solo dispositivo)
  *  - SupabaseRepository (nube, sincroniza entre dispositivos)
- * El resto de la app no sabe cuál está usando.
  */
 export interface NoteRepository {
-  list(): Promise<Note[]>
+  list(boardId: string): Promise<Note[]>
   create(input: NewNoteInput): Promise<Note>
   update(id: string, patch: Partial<Note>): Promise<Note>
   remove(id: string): Promise<void>
-  /** Borra definitivamente todas las notas de la papelera. Devuelve cuántas eliminó. */
-  emptyTrash(): Promise<number>
+  /** Borra definitivamente las notas de la papelera de un tablero. Devuelve cuántas eliminó. */
+  emptyTrash(boardId: string): Promise<number>
+}
+
+/** Acceso a datos de TABLEROS. */
+export interface BoardRepository {
+  listBoards(): Promise<Board[]>
+  createBoard(name: string): Promise<Board>
+  renameBoard(id: string, name: string): Promise<Board>
+  deleteBoard(id: string): Promise<void>
 }

@@ -7,8 +7,22 @@ export type NoteColor =
   | 'purple'
   | 'gray'
 
+/** Rol del usuario sobre un tablero. */
+export type BoardRole = 'owner' | 'editor' | 'viewer'
+
+export interface Board {
+  id: string
+  name: string
+  ownerId: string
+  /** Rol del usuario actual sobre este tablero. */
+  role: BoardRole
+  createdAt: string
+}
+
 export interface Note {
   id: string
+  /** Tablero al que pertenece la nota. */
+  boardId: string
   /** Título opcional que se muestra en la cabecera. */
   title: string
   text: string
@@ -32,6 +46,7 @@ export interface Note {
 }
 
 export interface NewNoteInput {
+  boardId: string
   title?: string
   text?: string
   color?: NoteColor

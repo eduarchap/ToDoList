@@ -1,4 +1,5 @@
 import { useAuth } from './context/AuthContext'
+import { BoardsProvider } from './context/BoardsContext'
 import { NotesProvider } from './context/NotesContext'
 import { Board } from './components/Board'
 import { Login } from './components/Login'
@@ -19,8 +20,10 @@ export default function App() {
   }
 
   return (
-    <NotesProvider>
-      <Board />
-    </NotesProvider>
+    <BoardsProvider>
+      <NotesProvider>
+        <Board />
+      </NotesProvider>
+    </BoardsProvider>
   )
 }

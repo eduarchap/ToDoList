@@ -1,4 +1,5 @@
 import { useAuth } from '../context/AuthContext'
+import { BoardSwitcher } from './BoardSwitcher'
 import { CloudIcon, DeviceIcon, LogOutIcon, TrashIcon } from './icons'
 
 interface Props {
@@ -12,14 +13,14 @@ export function TopBar({ trashCount, onOpenTrash }: Props) {
 
   return (
     <header className="z-40 flex items-center gap-2 border-b border-slate-800 bg-slate-900/80 px-3 py-2 backdrop-blur">
-      <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white">
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <path d="M8 8h5M8 12h8M8 16h6" />
           </svg>
         </div>
-        <span className="text-lg font-bold tracking-tight text-slate-100">Pizarra</span>
+        <BoardSwitcher />
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">

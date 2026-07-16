@@ -27,8 +27,8 @@ function save(notes: Note[]): void {
 
 /** Persistencia en el navegador (sin cuenta, un solo dispositivo). */
 export class LocalRepository implements NoteRepository {
-  async list(): Promise<Note[]> {
-    return load()
+  async list(boardId: string): Promise<Note[]> {
+    return load().filter((n) => n.boardId === boardId)
   }
 
   async create(input: NewNoteInput): Promise<Note> {
@@ -36,6 +36,7 @@ export class LocalRepository implements NoteRepository {
     const ts = nowISO()
     const note: Note = {
       id: uid(),
+      boardId: input.boardId,
       title: input.title ?? '',
       text: input.text ?? '',
       color: input.color ?? DEFAULT_COLOR,
@@ -68,9 +69,9 @@ export class LocalRepository implements NoteRepository {
     save(load().filter((n) => n.id !== id))
   }
 
-  async emptyTrash(): Promise<number> {
+  async emptyTrash(boardId: string): Promise<number> {
     const notes = load()
-    const remaining = notes.filter((n) => !n.trashed)
+    const remaining = notes.filter((n) => !(n.trashed && n.boardId === boardId))
     save(remaining)
     return notes.length - remaining.length
   }

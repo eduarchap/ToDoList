@@ -8,6 +8,7 @@ import { NOTE_W } from '../lib/board'
 interface NoteRow {
   id: string
   user_id: string
+  board_id: string
   title: string
   text: string
   color: string
@@ -26,6 +27,7 @@ interface NoteRow {
 function rowToNote(r: NoteRow): Note {
   return {
     id: r.id,
+    boardId: r.board_id,
     title: r.title ?? '',
     text: r.text ?? '',
     color: (r.color as NoteColor) ?? DEFAULT_COLOR,
@@ -67,11 +69,12 @@ export class SupabaseRepository implements NoteRepository {
     private readonly userId: string,
   ) {}
 
-  async list(): Promise<Note[]> {
+  async list(boardId: string): Promise<Note[]> {
+    // El acceso lo garantiza RLS; filtramos por el tablero pedido.
     const { data, error } = await this.client
       .from('notes')
       .select('*')
-      .eq('user_id', this.userId)
+      .eq('board_id', boardId)
       .order('z', { ascending: true })
     if (error) throw error
     return (data as NoteRow[]).map(rowToNote)
@@ -82,6 +85,7 @@ export class SupabaseRepository implements NoteRepository {
       .from('notes')
       .insert({
         user_id: this.userId,
+        board_id: input.boardId,
         title: input.title ?? '',
         text: input.text ?? '',
         color: input.color ?? DEFAULT_COLOR,
@@ -97,11 +101,11 @@ export class SupabaseRepository implements NoteRepository {
   }
 
   async update(id: string, patch: Partial<Note>): Promise<Note> {
+    // RLS decide si el usuario puede editar esta nota (propietario/editor del tablero).
     const { data, error } = await this.client
       .from('notes')
       .update(patchToRow(patch))
       .eq('id', id)
-      .eq('user_id', this.userId)
       .select()
       .single()
     if (error) throw error
@@ -109,19 +113,15 @@ export class SupabaseRepository implements NoteRepository {
   }
 
   async remove(id: string): Promise<void> {
-    const { error } = await this.client
-      .from('notes')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', this.userId)
+    const { error } = await this.client.from('notes').delete().eq('id', id)
     if (error) throw error
   }
 
-  async emptyTrash(): Promise<number> {
+  async emptyTrash(boardId: string): Promise<number> {
     const { data, error } = await this.client
       .from('notes')
       .delete()
-      .eq('user_id', this.userId)
+      .eq('board_id', boardId)
       .eq('trashed', true)
       .select('id')
     if (error) throw error

@@ -14,13 +14,17 @@ import { LocalRepository } from '../data/localRepository'
 import { SupabaseRepository } from '../data/supabaseRepository'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { useBoards } from './BoardsContext'
+
+/** Datos de una nota nueva, sin el tablero (lo inyecta el contexto). */
+type AddNoteInput = Omit<NewNoteInput, 'boardId'>
 
 interface NotesContextValue {
   notes: Note[]
   loading: boolean
   error: string | null
   maxZ: number
-  addNote(input: NewNoteInput): Promise<Note | null>
+  addNote(input: AddNoteInput): Promise<Note | null>
   patchNote(id: string, patch: Partial<Note>): Promise<void>
   trashNote(id: string): Promise<void>
   restoreNote(id: string): Promise<void>
@@ -33,6 +37,7 @@ const NotesContext = createContext<NotesContextValue | null>(null)
 
 export function NotesProvider({ children }: { children: ReactNode }) {
   const { status, user } = useAuth()
+  const { currentBoardId } = useBoards()
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,13 +52,15 @@ export function NotesProvider({ children }: { children: ReactNode }) {
 
   const repoRef = useRef(repo)
   repoRef.current = repo
+  const boardIdRef = useRef(currentBoardId)
+  boardIdRef.current = currentBoardId
 
   const reload = useCallback(async () => {
-    if (!repoRef.current) return
+    if (!repoRef.current || !boardIdRef.current) return
     setLoading(true)
     setError(null)
     try {
-      setNotes(await repoRef.current.list())
+      setNotes(await repoRef.current.list(boardIdRef.current))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar las notas')
     } finally {
@@ -62,21 +69,21 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!repo) {
+    if (!repo || !currentBoardId) {
       setNotes([])
-      setLoading(status === 'loading')
+      setLoading(status === 'loading' || (!!repo && !currentBoardId))
       return
     }
     void reload()
-  }, [repo, reload, status])
+  }, [repo, currentBoardId, reload, status])
 
   const maxZ = useMemo(() => notes.reduce((m, n) => Math.max(m, n.z), 0), [notes])
 
-  const addNote = useCallback(async (input: NewNoteInput): Promise<Note | null> => {
-    if (!repoRef.current) return null
+  const addNote = useCallback(async (input: AddNoteInput): Promise<Note | null> => {
+    if (!repoRef.current || !boardIdRef.current) return null
     setError(null)
     try {
-      const created = await repoRef.current.create(input)
+      const created = await repoRef.current.create({ ...input, boardId: boardIdRef.current })
       setNotes((prev) => [...prev, created])
       return created
     } catch (e) {
@@ -119,10 +126,10 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   }, [reload])
 
   const emptyTrash = useCallback(async () => {
-    if (!repoRef.current) return
+    if (!repoRef.current || !boardIdRef.current) return
     setNotes((prev) => prev.filter((n) => !n.trashed))
     try {
-      await repoRef.current.emptyTrash()
+      await repoRef.current.emptyTrash(boardIdRef.current)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo vaciar la papelera')
       void reload()

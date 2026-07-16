@@ -119,6 +119,26 @@ export const PaletteIcon = (p: IconProps) => (
   </svg>
 )
 
+export const ChevronDownIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+)
+
+export const PencilIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+)
+
+export const BoardIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M3 9h18M9 21V9" />
+  </svg>
+)
+
 export const GripIcon = (p: IconProps) => (
   <svg {...base} {...p}>
     <circle cx="9" cy="6" r="1.3" fill="currentColor" stroke="none" />
