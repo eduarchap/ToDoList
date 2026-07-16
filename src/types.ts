@@ -9,6 +9,8 @@ export type NoteColor =
 
 export interface Note {
   id: string
+  /** Título opcional que se muestra en la cabecera. */
+  title: string
   text: string
   color: NoteColor
   /** Posición en el lienzo (coordenadas de la pizarra, en px). */
@@ -30,6 +32,7 @@ export interface Note {
 }
 
 export interface NewNoteInput {
+  title?: string
   text?: string
   color?: NoteColor
   x: number

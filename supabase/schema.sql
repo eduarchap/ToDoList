@@ -4,6 +4,7 @@
 create table if not exists public.notes (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users (id) on delete cascade,
+  title       text not null default '',
   text        text not null default '',
   color       text not null default 'yellow',
   x           double precision not null default 0,

@@ -36,6 +36,7 @@ export class LocalRepository implements NoteRepository {
     const ts = nowISO()
     const note: Note = {
       id: uid(),
+      title: input.title ?? '',
       text: input.text ?? '',
       color: input.color ?? DEFAULT_COLOR,
       x: input.x,

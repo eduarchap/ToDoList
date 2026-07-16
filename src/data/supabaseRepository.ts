@@ -8,6 +8,7 @@ import { NOTE_W } from '../lib/board'
 interface NoteRow {
   id: string
   user_id: string
+  title: string
   text: string
   color: string
   x: number
@@ -25,6 +26,7 @@ interface NoteRow {
 function rowToNote(r: NoteRow): Note {
   return {
     id: r.id,
+    title: r.title ?? '',
     text: r.text ?? '',
     color: (r.color as NoteColor) ?? DEFAULT_COLOR,
     x: Number(r.x) || 0,
@@ -43,6 +45,7 @@ function rowToNote(r: NoteRow): Note {
 /** Traduce un patch de Note (camelCase) a columnas de BD (snake_case). */
 function patchToRow(patch: Partial<Note>): Record<string, unknown> {
   const row: Record<string, unknown> = {}
+  if ('title' in patch) row.title = patch.title
   if ('text' in patch) row.text = patch.text
   if ('color' in patch) row.color = patch.color
   if ('x' in patch) row.x = patch.x
@@ -79,6 +82,7 @@ export class SupabaseRepository implements NoteRepository {
       .from('notes')
       .insert({
         user_id: this.userId,
+        title: input.title ?? '',
         text: input.text ?? '',
         color: input.color ?? DEFAULT_COLOR,
         x: input.x,

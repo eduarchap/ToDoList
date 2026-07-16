@@ -51,6 +51,8 @@ export function StickyNote({
   const resizingRef = useRef(false)
   const resizeOrigin = useRef<{ px: number; py: number; ow: number; oh: number } | null>(null)
 
+  const [title, setTitle] = useState(note.title)
+  const titleRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState(note.text)
   const [colorOpen, setColorOpen] = useState(false)
   const [showDate, setShowDate] = useState(false)
@@ -80,6 +82,10 @@ export function StickyNote({
   useEffect(() => {
     if (document.activeElement !== textRef.current) setText(note.text)
   }, [note.text])
+
+  useEffect(() => {
+    if (document.activeElement !== titleRef.current) setTitle(note.title)
+  }, [note.title])
 
   // Altura del textarea: auto-crece con el texto solo si la nota no tiene altura fija.
   useEffect(() => {
@@ -153,6 +159,9 @@ export function StickyNote({
   function commitText() {
     if (text !== note.text) patchNote(note.id, { text })
   }
+  function commitTitle() {
+    if (title !== note.title) patchNote(note.id, { title })
+  }
 
   const overdue = !note.trashed && isOverdue(note.dueDate)
 
@@ -200,6 +209,17 @@ export function StickyNote({
           />
         )}
       </div>
+
+      {/* Título */}
+      <input
+        ref={titleRef}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onBlur={commitTitle}
+        placeholder="Título"
+        className="w-full shrink-0 cursor-text border-b border-black/10 bg-transparent px-2.5 pb-1.5 pt-1.5 text-sm font-bold placeholder:font-medium placeholder:opacity-40 focus:outline-none"
+        style={{ color: spec.text }}
+      />
 
       <textarea
         ref={textRef}

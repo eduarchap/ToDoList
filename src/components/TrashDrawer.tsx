@@ -55,7 +55,9 @@ export function TrashDrawer({ open, onClose }: Props) {
                     style={{ backgroundColor: COLORS[n.color].swatch }}
                   />
                   <p className="min-w-0 flex-1 break-words text-sm text-slate-200">
-                    {n.text.trim() || <span className="italic text-slate-500">(sin texto)</span>}
+                    {n.title.trim() || n.text.trim() || (
+                      <span className="italic text-slate-500">(sin texto)</span>
+                    )}
                   </p>
                   <div className="flex shrink-0 gap-1">
                     <button

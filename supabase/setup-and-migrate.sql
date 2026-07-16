@@ -8,6 +8,7 @@
 create table if not exists public.notes (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users (id) on delete cascade,
+  title       text not null default '',
   text        text not null default '',
   color       text not null default 'yellow',
   x           double precision not null default 0,
@@ -42,7 +43,7 @@ create policy "notes_delete_own" on public.notes for delete using (auth.uid() = 
 --    - posición en cuadrícula para que no se solapen
 --    - las tareas COMPLETADAS entran directamente en la papelera
 --    Solo se ejecuta si aún no tienes notas (evita duplicados al re-ejecutar).
-insert into public.notes (user_id, text, color, x, y, z, due_date, trashed, trashed_at, created_at)
+insert into public.notes (user_id, title, text, color, x, y, z, due_date, trashed, trashed_at, created_at)
 with src as (
   select
     t.*,
@@ -51,9 +52,8 @@ with src as (
 )
 select
   src.user_id,
-  case when coalesce(src.notes, '') <> ''
-       then src.title || E'\n' || src.notes
-       else src.title end,
+  src.title,
+  coalesce(src.notes, ''),
   case src.priority when 1 then 'pink' when 2 then 'orange' when 3 then 'blue' else 'yellow' end,
   40 + (src.rn % 6) * 210,
   40 + (src.rn / 6) * 190,
