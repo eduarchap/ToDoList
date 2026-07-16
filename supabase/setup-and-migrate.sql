@@ -13,6 +13,8 @@ create table if not exists public.notes (
   x           double precision not null default 0,
   y           double precision not null default 0,
   z           integer not null default 0,
+  w           double precision not null default 184,
+  h           double precision not null default 0,
   due_date    date,
   trashed     boolean not null default false,
   trashed_at  timestamptz,

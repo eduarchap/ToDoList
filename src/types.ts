@@ -16,6 +16,10 @@ export interface Note {
   y: number
   /** Orden de apilado: mayor = más al frente. */
   z: number
+  /** Anchura de la nota en px (coordenadas del lienzo). */
+  w: number
+  /** Altura de la nota en px; 0 = automática (se ajusta al texto). */
+  h: number
   /** Fecha opcional en formato ISO (YYYY-MM-DD) o null. */
   dueDate: string | null
   /** true si está en la papelera. */
@@ -31,5 +35,7 @@ export interface NewNoteInput {
   x: number
   y: number
   z?: number
+  w?: number
+  h?: number
   dueDate?: string | null
 }

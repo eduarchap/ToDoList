@@ -2,8 +2,14 @@
 export const BOARD_W = 2400
 export const BOARD_H = 1600
 
-/** Anchura fija de una nota. */
+/** Anchura por defecto de una nota. */
 export const NOTE_W = 184
+
+/** Límites de redimensionado de una nota (px del lienzo). */
+export const NOTE_MIN_W = 130
+export const NOTE_MAX_W = 560
+export const NOTE_MIN_H = 90
+export const NOTE_MAX_H = 720
 
 /** Límites de zoom del lienzo. */
 export const MIN_SCALE = 0.4

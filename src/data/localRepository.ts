@@ -2,6 +2,7 @@ import type { NewNoteInput, Note } from '../types'
 import type { NoteRepository } from './repository'
 import { uid } from '../lib/id'
 import { DEFAULT_COLOR } from '../lib/colors'
+import { NOTE_W } from '../lib/board'
 
 const STORAGE_KEY = 'pizarra.notes.v1'
 
@@ -40,6 +41,8 @@ export class LocalRepository implements NoteRepository {
       x: input.x,
       y: input.y,
       z: input.z ?? notes.length + 1,
+      w: input.w ?? NOTE_W,
+      h: input.h ?? 0,
       dueDate: input.dueDate ?? null,
       trashed: false,
       trashedAt: null,

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { NewNoteInput, Note, NoteColor } from '../types'
 import type { NoteRepository } from './repository'
 import { DEFAULT_COLOR } from '../lib/colors'
+import { NOTE_W } from '../lib/board'
 
 /** Fila tal como se guarda en la tabla `notes` de Supabase (snake_case). */
 interface NoteRow {
@@ -12,6 +13,8 @@ interface NoteRow {
   x: number
   y: number
   z: number
+  w: number
+  h: number
   due_date: string | null
   trashed: boolean
   trashed_at: string | null
@@ -27,6 +30,8 @@ function rowToNote(r: NoteRow): Note {
     x: Number(r.x) || 0,
     y: Number(r.y) || 0,
     z: r.z ?? 0,
+    w: Number(r.w) || NOTE_W,
+    h: Number(r.h) || 0,
     dueDate: r.due_date,
     trashed: r.trashed,
     trashedAt: r.trashed_at,
@@ -43,6 +48,8 @@ function patchToRow(patch: Partial<Note>): Record<string, unknown> {
   if ('x' in patch) row.x = patch.x
   if ('y' in patch) row.y = patch.y
   if ('z' in patch) row.z = patch.z
+  if ('w' in patch) row.w = patch.w
+  if ('h' in patch) row.h = patch.h
   if ('dueDate' in patch) row.due_date = patch.dueDate
   if ('trashed' in patch) row.trashed = patch.trashed
   if ('trashedAt' in patch) row.trashed_at = patch.trashedAt
