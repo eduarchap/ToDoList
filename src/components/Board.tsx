@@ -24,6 +24,11 @@ export function Board() {
   const [panning, setPanning] = useState(false)
   const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null)
 
+  // Seguimiento de dedos activos para el pellizco (pinch-to-zoom) en táctil.
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const pinchRef = useRef<{ dist: number; scale: number } | null>(null)
+  const [pinching, setPinching] = useState(false)
+
   const visible = notes.filter((n) => !n.trashed)
   const trashCount = notes.length - visible.length
 
@@ -84,10 +89,26 @@ export function Board() {
     zoomTo(1, vp.clientWidth / 2, vp.clientHeight / 2)
   }
 
-  // Pan con clic izquierdo sostenido (solo ratón; en táctil se usa el arrastre nativo).
+  function twoTouchDistance() {
+    const pts = [...pointersRef.current.values()]
+    if (pts.length < 2) return 0
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+  }
+
   function onPointerDown(e: React.PointerEvent) {
-    if (e.pointerType !== 'mouse' || e.button !== 0) return
-    if ((e.target as HTMLElement).closest('[data-note]')) return // clic sobre nota → no pan
+    // Táctil: registra el dedo; con dos dedos empieza el pellizco (zoom).
+    if (e.pointerType === 'touch') {
+      if ((e.target as HTMLElement).closest('[data-note]')) return // no interferir al mover/editar notas
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (pointersRef.current.size === 2) {
+        pinchRef.current = { dist: twoTouchDistance(), scale: scaleRef.current }
+        setPinching(true)
+      }
+      return
+    }
+    // Ratón: pan con clic izquierdo sostenido en zona vacía.
+    if (e.button !== 0) return
+    if ((e.target as HTMLElement).closest('[data-note]')) return
     const vp = viewportRef.current
     if (!vp) return
     panRef.current = { x: e.clientX, y: e.clientY, sl: vp.scrollLeft, st: vp.scrollTop }
@@ -96,6 +117,21 @@ export function Board() {
   }
 
   function onPointerMove(e: React.PointerEvent) {
+    if (e.pointerType === 'touch') {
+      if (!pointersRef.current.has(e.pointerId)) return
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      if (pointersRef.current.size === 2 && pinchRef.current) {
+        const vp = viewportRef.current
+        if (!vp) return
+        const pts = [...pointersRef.current.values()]
+        const rect = vp.getBoundingClientRect()
+        const midX = (pts[0].x + pts[1].x) / 2 - rect.left
+        const midY = (pts[0].y + pts[1].y) / 2 - rect.top
+        const ratio = twoTouchDistance() / (pinchRef.current.dist || 1)
+        zoomTo(pinchRef.current.scale * ratio, midX, midY)
+      }
+      return
+    }
     if (!panRef.current) return
     const vp = viewportRef.current
     if (!vp) return
@@ -104,6 +140,14 @@ export function Board() {
   }
 
   function endPan(e: React.PointerEvent) {
+    if (e.pointerType === 'touch') {
+      pointersRef.current.delete(e.pointerId)
+      if (pointersRef.current.size < 2) {
+        pinchRef.current = null
+        setPinching(false)
+      }
+      return
+    }
     if (!panRef.current) return
     panRef.current = null
     setPanning(false)
@@ -177,7 +221,7 @@ export function Board() {
       <div
         ref={viewportRef}
         className={`relative min-h-0 flex-1 overflow-auto bg-slate-950 ${panning ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
-        style={{ touchAction: dragging ? 'none' : 'auto' }}
+        style={{ touchAction: dragging || pinching ? 'none' : 'auto' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endPan}
