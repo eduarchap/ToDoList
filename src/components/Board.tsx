@@ -71,6 +71,8 @@ export function Board() {
     const vp = viewportRef.current
     if (!vp) return
     function onWheel(e: WheelEvent) {
+      // Si el cursor está dentro de una nota, deja el scroll interno nativo (no zoom).
+      if ((e.target as HTMLElement)?.closest('[data-note]')) return
       e.preventDefault()
       const rect = vp!.getBoundingClientRect()
       const factor = Math.exp(-e.deltaY * 0.0015)
