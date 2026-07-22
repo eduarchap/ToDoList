@@ -5,6 +5,7 @@ import { BOARD_H, BOARD_W, MAX_SCALE, MIN_SCALE, NOTE_W, clamp } from '../lib/bo
 import { StickyNote } from './StickyNote'
 import { TopBar } from './TopBar'
 import { TrashDrawer } from './TrashDrawer'
+import { FormatToolbar } from './FormatToolbar'
 import { PlusIcon, TrashIcon } from './icons'
 
 export function Board() {
@@ -18,6 +19,7 @@ export function Board() {
   const [overTrash, setOverTrash] = useState(false)
   const [autoFocusId, setAutoFocusId] = useState<string | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
+  const [formatting, setFormatting] = useState(false)
 
   const [scale, setScale] = useState(1)
   const scaleRef = useRef(scale)
@@ -256,6 +258,8 @@ export function Board() {
                 onDragStart={() => setDragging(true)}
                 onDragMove={handleDragMove}
                 onDrop={handleDrop}
+                onEditStart={() => setFormatting(true)}
+                onEditEnd={() => setFormatting(false)}
               />
             ))}
           </div>
@@ -316,6 +320,8 @@ export function Board() {
           </span>
         </div>
       )}
+
+      {formatting && !readOnly && <FormatToolbar />}
 
       <TrashDrawer open={trashOpen} onClose={() => setTrashOpen(false)} />
     </div>

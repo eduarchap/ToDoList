@@ -38,4 +38,10 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  /* Placeholder para el editor de notas (contenteditable vacío). */
+  .note-editor:empty::before {
+    content: attr(data-placeholder);
+    opacity: 0.4;
+    pointer-events: none;
+  }
 }

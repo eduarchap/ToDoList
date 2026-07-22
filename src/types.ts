@@ -34,7 +34,10 @@ export interface Note {
   boardId: string
   /** Título opcional que se muestra en la cabecera. */
   title: string
+  /** Texto plano (para vistas previas/papelera). */
   text: string
+  /** Contenido con formato (HTML saneado); null si es solo texto plano. */
+  html: string | null
   color: NoteColor
   /** Posición en el lienzo (coordenadas de la pizarra, en px). */
   x: number

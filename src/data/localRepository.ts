@@ -39,6 +39,7 @@ export class LocalRepository implements NoteRepository {
       boardId: input.boardId,
       title: input.title ?? '',
       text: input.text ?? '',
+      html: null,
       color: input.color ?? DEFAULT_COLOR,
       x: input.x,
       y: input.y,

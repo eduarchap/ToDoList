@@ -11,6 +11,7 @@ interface NoteRow {
   board_id: string
   title: string
   text: string
+  html: string | null
   color: string
   x: number
   y: number
@@ -30,6 +31,7 @@ function rowToNote(r: NoteRow): Note {
     boardId: r.board_id,
     title: r.title ?? '',
     text: r.text ?? '',
+    html: r.html ?? null,
     color: (r.color as NoteColor) ?? DEFAULT_COLOR,
     x: Number(r.x) || 0,
     y: Number(r.y) || 0,
@@ -49,6 +51,7 @@ function patchToRow(patch: Partial<Note>): Record<string, unknown> {
   const row: Record<string, unknown> = {}
   if ('title' in patch) row.title = patch.title
   if ('text' in patch) row.text = patch.text
+  if ('html' in patch) row.html = patch.html
   if ('color' in patch) row.color = patch.color
   if ('x' in patch) row.x = patch.x
   if ('y' in patch) row.y = patch.y

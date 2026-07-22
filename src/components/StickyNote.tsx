@@ -11,6 +11,7 @@ import {
   clamp,
 } from '../lib/board'
 import { formatDueLabel, isOverdue } from '../lib/date'
+import { sanitizeHtml, textToHtml } from '../lib/sanitizeHtml'
 import { useNotes } from '../context/NotesContext'
 import { ColorMenu } from './ColorMenu'
 import { CalendarIcon, GripIcon, PaletteIcon, TrashIcon, XIcon } from './icons'
@@ -18,14 +19,15 @@ import { CalendarIcon, GripIcon, PaletteIcon, TrashIcon, XIcon } from './icons'
 interface Props {
   note: Note
   autoFocus: boolean
-  /** Nivel de zoom actual del tablero (para convertir píxeles de pantalla a coordenadas del lienzo). */
   scale: number
-  /** Solo lectura (rol viewer): sin arrastrar, editar, redimensionar ni tirar. */
   readOnly?: boolean
   onBringToFront: (id: string) => void
   onDragStart: () => void
   onDragMove: (clientX: number, clientY: number) => void
   onDrop: (id: string, x: number, y: number, clientX: number, clientY: number) => void
+  /** Aviso al empezar/terminar de editar el texto (para mostrar la barra de formato). */
+  onEditStart?: () => void
+  onEditEnd?: () => void
 }
 
 export function StickyNote({
@@ -37,12 +39,14 @@ export function StickyNote({
   onDragStart,
   onDragMove,
   onDrop,
+  onEditStart,
+  onEditEnd,
 }: Props) {
   const { patchNote, trashNote } = useNotes()
   const spec = COLORS[note.color]
 
   const rootRef = useRef<HTMLDivElement>(null)
-  const textRef = useRef<HTMLTextAreaElement>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
 
   const [pos, setPos] = useState({ x: note.x, y: note.y })
   const posRef = useRef(pos)
@@ -56,7 +60,6 @@ export function StickyNote({
 
   const [title, setTitle] = useState(note.title)
   const titleRef = useRef<HTMLInputElement>(null)
-  const [text, setText] = useState(note.text)
   const [colorOpen, setColorOpen] = useState(false)
   const [showDate, setShowDate] = useState(false)
 
@@ -71,7 +74,6 @@ export function StickyNote({
     setSize({ w, h })
   }
 
-  // Sincroniza posición/tamaño si cambian desde fuera y no estamos interactuando.
   useEffect(() => {
     if (!draggingRef.current) setPosition(note.x, note.y)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,27 +85,20 @@ export function StickyNote({
   }, [note.w, note.h])
 
   useEffect(() => {
-    if (document.activeElement !== textRef.current) setText(note.text)
-  }, [note.text])
-
-  useEffect(() => {
     if (document.activeElement !== titleRef.current) setTitle(note.title)
   }, [note.title])
 
-  // Altura del textarea: auto-crece con el texto solo si la nota no tiene altura fija.
+  // Contenido del editor: inicializa/sincroniza salvo mientras se está editando.
   useEffect(() => {
-    const el = textRef.current
-    if (!el) return
-    if (autoHeight) {
-      el.style.height = 'auto'
-      el.style.height = Math.max(48, el.scrollHeight) + 'px'
-    } else {
-      el.style.height = '' // el layout flex controla la altura
-    }
-  }, [text, autoHeight])
+    const el = editorRef.current
+    if (!el || document.activeElement === el) return
+    const desired = sanitizeHtml(note.html ?? textToHtml(note.text))
+    if (el.innerHTML !== desired) el.innerHTML = desired
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note.html, note.text])
 
   useEffect(() => {
-    if (autoFocus) textRef.current?.focus()
+    if (autoFocus) editorRef.current?.focus()
   }, [autoFocus])
 
   // ---- Arrastre de posición (cabecera) ----
@@ -160,11 +155,26 @@ export function StickyNote({
     patchNote(note.id, { w: sizeRef.current.w, h: sizeRef.current.h })
   }
 
-  function commitText() {
-    if (text !== note.text) patchNote(note.id, { text })
-  }
   function commitTitle() {
     if (title !== note.title) patchNote(note.id, { title })
+  }
+
+  function commitHtml() {
+    onEditEnd?.()
+    const el = editorRef.current
+    if (!el) return
+    const html = sanitizeHtml(el.innerHTML)
+    const plain = el.textContent ?? ''
+    if (html !== (note.html ?? '') || plain !== note.text) {
+      patchNote(note.id, { html, text: plain })
+    }
+  }
+
+  // Pega siempre como texto plano (evita HTML externo peligroso; el formato se pone con la barra).
+  function onPaste(e: React.ClipboardEvent) {
+    e.preventDefault()
+    const text = e.clipboardData.getData('text/plain')
+    document.execCommand('insertText', false, text)
   }
 
   const overdue = !note.trashed && isOverdue(note.dueDate)
@@ -230,20 +240,24 @@ export function StickyNote({
         />
       )}
 
-      <textarea
-        ref={textRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onBlur={commitText}
-        placeholder={readOnly ? '' : 'Escribe aquí…'}
-        readOnly={readOnly}
-        rows={2}
+      {/* Cuerpo con formato (contenteditable) */}
+      <div
+        ref={editorRef}
+        data-note-editor
+        contentEditable={!readOnly}
+        suppressContentEditableWarning
+        role="textbox"
+        aria-multiline="true"
+        data-placeholder={readOnly ? '' : 'Escribe aquí…'}
+        onFocus={() => onEditStart?.()}
+        onBlur={commitHtml}
+        onPaste={onPaste}
         className={[
-          'w-full resize-none bg-transparent px-2.5 py-2 text-sm leading-snug placeholder:opacity-40 focus:outline-none',
+          'note-editor w-full whitespace-pre-wrap break-words px-2.5 py-2 text-sm leading-snug focus:outline-none',
           readOnly ? 'cursor-default' : 'cursor-text',
           autoHeight ? '' : 'min-h-0 flex-1 overflow-auto',
         ].join(' ')}
-        style={{ color: spec.text }}
+        style={{ color: spec.text, minHeight: autoHeight ? 44 : undefined }}
       />
 
       {(showDate || note.dueDate) && (
