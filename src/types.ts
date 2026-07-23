@@ -38,7 +38,8 @@ export interface Note {
   text: string
   /** Contenido con formato (HTML saneado); null si es solo texto plano. */
   html: string | null
-  color: NoteColor
+  /** Color: un preset (NoteColor) o un hex personalizado ('#rrggbb'). */
+  color: string
   /** Posición en el lienzo (coordenadas de la pizarra, en px). */
   x: number
   y: number
@@ -61,7 +62,7 @@ export interface NewNoteInput {
   boardId: string
   title?: string
   text?: string
-  color?: NoteColor
+  color?: string
   x: number
   y: number
   z?: number

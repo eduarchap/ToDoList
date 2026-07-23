@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNotes } from '../context/NotesContext'
-import { COLORS } from '../lib/colors'
+import { resolveColor } from '../lib/colors'
 import { RestoreIcon, TrashIcon, XIcon } from './icons'
 
 interface Props {
@@ -52,7 +52,7 @@ export function TrashDrawer({ open, onClose }: Props) {
                 >
                   <span
                     className="mt-1 h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: COLORS[n.color].swatch }}
+                    style={{ backgroundColor: resolveColor(n.color).swatch }}
                   />
                   <p className="min-w-0 flex-1 break-words text-sm text-slate-200">
                     {n.title.trim() || n.text.trim() || (

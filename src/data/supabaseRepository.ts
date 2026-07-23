@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { NewNoteInput, Note, NoteColor } from '../types'
+import type { NewNoteInput, Note } from '../types'
 import type { NoteRepository } from './repository'
 import { DEFAULT_COLOR } from '../lib/colors'
 import { NOTE_W } from '../lib/board'
@@ -32,7 +32,7 @@ function rowToNote(r: NoteRow): Note {
     title: r.title ?? '',
     text: r.text ?? '',
     html: r.html ?? null,
-    color: (r.color as NoteColor) ?? DEFAULT_COLOR,
+    color: r.color || DEFAULT_COLOR,
     x: Number(r.x) || 0,
     y: Number(r.y) || 0,
     z: r.z ?? 0,

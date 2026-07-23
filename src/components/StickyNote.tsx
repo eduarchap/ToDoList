@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Note } from '../types'
-import { COLORS } from '../lib/colors'
+import { resolveColor } from '../lib/colors'
 import {
   BOARD_H,
   BOARD_W,
@@ -43,7 +43,7 @@ export function StickyNote({
   onEditEnd,
 }: Props) {
   const { patchNote, trashNote } = useNotes()
-  const spec = COLORS[note.color]
+  const spec = resolveColor(note.color)
 
   const rootRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
