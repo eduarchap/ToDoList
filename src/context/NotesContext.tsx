@@ -100,10 +100,11 @@ export function NotesProvider({ children }: { children: ReactNode }) {
     try {
       await repoRef.current.update(id, patch)
     } catch (e) {
+      // NO recargamos: así un fallo de guardado no borra lo que el usuario escribió.
+      // El cambio queda en pantalla y se muestra el error para reintentar.
       setError(errMessage(e, 'No se pudo guardar el cambio'))
-      void reload()
     }
-  }, [reload])
+  }, [])
 
   const trashNote = useCallback(
     (id: string) => patchNote(id, { trashed: true, trashedAt: new Date().toISOString() }),
